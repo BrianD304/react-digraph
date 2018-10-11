@@ -430,7 +430,7 @@ class GraphView extends Component {
       this.props.onSelectNode(null);
 
       if (!this.props.readOnly && d3.event.shiftKey) {
-        var xycoords = d3.mouse(event.target);
+        var xycoords = d3.mouse(d3.event.target);
         this.props.onCreateNode(xycoords[0], xycoords[1]);
         this.renderView();
       }
