@@ -1,5 +1,5 @@
 {
-  "name": "react-digraph",
+  "name": "react-digraph1",
   "description": "directed graph react component",
   "version": "4.1.7",
   "keywords": [
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/uber/react-digraph.git"
+    "url": "git+https://github.com/uber/react-digraph.git"
   },
   "bugs": {
     "url": "https://github.com/uber/react-digraph/issues/new",
@@ -79,5 +79,7 @@
     "prepublish": "npm run build",
     "test": "NODE_ENV=test npm run lint && npm run fast-test",
     "view-cover": "npm run cover -- --report=html && opn ./coverage/index.html"
-  }
+  },
+  "homepage": "https://github.com/uber/react-digraph#readme",
+  "author": "me"
 }

@@ -23,32 +23,34 @@
   code in it and no significant state except UI state (zoom, for example).
 */
 
-import React, {
-  Component
-} from 'react';
-import PropTypes from 'prop-types';
-import * as d3 from 'd3';
-import Radium from 'radium';
-import GraphControls from './graph-controls.js'
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import * as d3 from "d3";
+import Radium from "radium";
+import GraphControls from "./graph-controls.js";
 
-
-function styleToString(style){
+function styleToString(style) {
   return Object.keys(style)
     .map(function(k) {
-      let key = k.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+      let key = k.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
       return `${key}:${style[k]}`;
-    }).join(";")
+    })
+    .join(";");
 }
 
-
-function makeStyles(primary='dodgerblue', light='white', dark='black', background='#F9F9F9'){
- let styles = {
+function makeStyles(
+  primary = "dodgerblue",
+  light = "white",
+  dark = "black",
+  background = "#F9F9F9"
+) {
+  let styles = {
     wrapper: {
       base: {
-        height: '100%',
+        height: "100%",
         margin: 0,
-        display: 'flex',
-        boxShadow: 'none',
+        display: "flex",
+        boxShadow: "none",
         opacity: 0.5,
         background: background,
         transition: "opacity 0.167s"
@@ -59,7 +61,7 @@ function makeStyles(primary='dodgerblue', light='white', dark='black', backgroun
     },
     svg: {
       base: {
-        alignContent: 'stretch',
+        alignContent: "stretch",
         flex: 1
       }
     },
@@ -68,9 +70,9 @@ function makeStyles(primary='dodgerblue', light='white', dark='black', backgroun
         color: primary,
         stroke: light,
         fill: light,
-        filter: 'url(#dropshadow)',
-        strokeWidth: '0.5px',
-        cursor: 'pointer'
+        filter: "url(#dropshadow)",
+        strokeWidth: "0.5px",
+        cursor: "pointer"
       },
       selected: {
         color: light,
@@ -79,12 +81,12 @@ function makeStyles(primary='dodgerblue', light='white', dark='black', backgroun
       }
     },
     shape: {
-      fill: 'inherit',
+      fill: "inherit",
       stroke: dark,
-      strokeWidth: '0.5px'
+      strokeWidth: "0.5px"
     },
     text: {
-      base:{
+      base: {
         fill: dark,
         stroke: dark
       },
@@ -97,9 +99,9 @@ function makeStyles(primary='dodgerblue', light='white', dark='black', backgroun
       base: {
         color: light,
         stroke: primary,
-        strokeWidth: '2px',
-        markerEnd: 'url(#end-arrow)',
-        cursor: 'pointer'
+        strokeWidth: "2px",
+        markerEnd: "url(#end-arrow)",
+        cursor: "pointer"
       },
       selected: {
         color: primary,
@@ -109,17 +111,26 @@ function makeStyles(primary='dodgerblue', light='white', dark='black', backgroun
     arrow: {
       fill: primary
     }
-  }
+  };
 
   // Styles need to be strings for D3 to apply them all at once
   styles.node.baseString = styleToString(styles.node.base);
-  styles.node.selectedString = styleToString({...styles.node.base, ...styles.node.selected});
-  styles.text.baseString= styleToString(styles.text.base);
-  styles.text.selectedString = styleToString({...styles.text.base, ...styles.text.selected});
+  styles.node.selectedString = styleToString({
+    ...styles.node.base,
+    ...styles.node.selected
+  });
+  styles.text.baseString = styleToString(styles.text.base);
+  styles.text.selectedString = styleToString({
+    ...styles.text.base,
+    ...styles.text.selected
+  });
   styles.edge.baseString = styleToString(styles.edge.base);
-  styles.edge.selectedString = styleToString({...styles.edge.base, ...styles.edge.selected});
+  styles.edge.selectedString = styleToString({
+    ...styles.edge.base,
+    ...styles.edge.selected
+  });
 
-  return styles
+  return styles;
 }
 
 // any objects with x & y properties
@@ -127,24 +138,21 @@ function getTheta(pt1, pt2) {
   const xComp = pt2.x - pt1.x;
   const yComp = pt2.y - pt1.y;
   const theta = Math.atan2(yComp, xComp);
-  return theta
+  return theta;
 }
 
 function getMidpoint(pt1, pt2) {
-  const x = (pt2.x + pt1.x)/2;
-  const y = (pt2.y + pt1.y)/2;
+  const x = (pt2.x + pt1.x) / 2;
+  const y = (pt2.y + pt1.y) / 2;
 
-  return {x: x, y: y};
+  return { x: x, y: y };
 }
 
 function getDistance(pt1, pt2) {
-  return  Math.sqrt(Math.pow(pt2.x - pt1.x, 2) + Math.pow(pt2.y - pt1.y, 2))
+  return Math.sqrt(Math.pow(pt2.x - pt1.x, 2) + Math.pow(pt2.y - pt1.y, 2));
 }
 
-
-
 class GraphView extends Component {
-
   constructor(props) {
     super(props);
 
@@ -153,13 +161,19 @@ class GraphView extends Component {
       selectionChanged: false,
       focused: true,
       enableFocus: props.enableFocus || false, // Enables focus/unfocus
-      edgeSwapQueue: [],    // Stores nodes to be swapped
-      styles: makeStyles(props.primary, props.light, props.dark, props.background)
+      edgeSwapQueue: [], // Stores nodes to be swapped
+      styles: makeStyles(
+        props.primary,
+        props.light,
+        props.dark,
+        props.background
+      )
     };
 
-    this.zoom = d3.zoom()
-                  .scaleExtent([props.minZoom, props.maxZoom])
-                  .on("zoom", this.handleZoom);
+    this.zoom = d3
+      .zoom()
+      .scaleExtent([props.minZoom, props.maxZoom])
+      .on("zoom", this.handleZoom);
 
     this.nodeTimeouts = {};
     this.edgeTimeouts = {};
@@ -168,10 +182,10 @@ class GraphView extends Component {
   componentDidMount() {
     // Window event listeners for keypresses
     // and to control blur/focus of graph
-    d3.select(this.viewWrapper)
-      .on('keydown', this.handleWrapperKeydown);
+    d3.select(this.viewWrapper).on("keydown", this.handleWrapperKeydown);
 
-    var svg = d3.select(this.viewWrapper)
+    var svg = d3
+      .select(this.viewWrapper)
       .on("touchstart", this.containZoom)
       .on("touchmove", this.containZoom)
       .on("click", this.handleSvgClicked)
@@ -184,7 +198,7 @@ class GraphView extends Component {
 
     // It seems Electron/JSDom's mocking of the SVG API is incomplete
     // and causes D3 to error out when zooming to fit in tests.
-    if(process.env.NODE_ENV !== "test"){
+    if (process.env.NODE_ENV !== "test") {
       setTimeout(() => {
         if (this.viewWrapper != null) {
           this.handleZoomToFit();
@@ -195,8 +209,7 @@ class GraphView extends Component {
 
   componentWillUnmount() {
     // Remove window event listeners
-    d3.select(this.viewWrapper)
-      .on('keydown', null);
+    d3.select(this.viewWrapper).on("keydown", null);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -210,10 +223,10 @@ class GraphView extends Component {
       newState.selectionChanged = true;
 
       let selectionType = null;
-      if (nextProps.selected && nextProps.selected.source){
-        newState.selectionType = 'edge'
+      if (nextProps.selected && nextProps.selected.source) {
+        newState.selectionType = "edge";
       } else if (nextProps.selected && nextProps.selected[this.props.nodeKey]) {
-        newState.selectionType = 'node'
+        newState.selectionType = "node";
       }
 
       this.setState(newState);
@@ -232,52 +245,60 @@ class GraphView extends Component {
    * Handlers/Interaction
    */
 
-  hideEdge = (edgeDOMNode) => {
-    d3.select(edgeDOMNode)
-      .attr("opacity", 0)
-  }
+  hideEdge = edgeDOMNode => {
+    d3.select(edgeDOMNode).attr("opacity", 0);
+  };
 
-  showEdge = (edgeDOMNode) => {
-    d3.select(edgeDOMNode)
-      .attr("opacity", 1)
-  }
+  showEdge = edgeDOMNode => {
+    d3.select(edgeDOMNode).attr("opacity", 1);
+  };
 
   canSwap = (sourceNode, hoveredNode, swapEdge) => {
-    return swapEdge.source != sourceNode[this.props.nodeKey] ||
-          swapEdge.target != hoveredNode[this.props.nodeKey]
-  }
+    return (
+      swapEdge.source != sourceNode[this.props.nodeKey] ||
+      swapEdge.target != hoveredNode[this.props.nodeKey]
+    );
+  };
 
-  lineFunction = (data) => {
+  lineFunction = data => {
     // Provides API for curved lines using .curve()
     // Example: https://bl.ocks.org/d3indepth/64be9fc39a92ef074034e9a8fb29dcce
-    return (d3.line()
-      .x(function (d) {
+    return d3
+      .line()
+      .x(function(d) {
         return d.x;
       })
-      .y(function (d) {
+      .y(function(d) {
         return d.y;
-      }))(data);
-  }
+      })(data);
+  };
 
   drawEdge = (sourceNode, target, swapErrBack) => {
     const self = this;
 
-    const dragEdge = d3.select(this.entities).append('svg:path')
+    const dragEdge = d3.select(this.entities).append("svg:path");
 
-    dragEdge.attr('class', 'link dragline')
+    dragEdge
+      .attr("class", "link dragline")
       .attr("style", this.state.styles.edge.selectedString)
-      .attr('d', this.lineFunction([
-        { x: sourceNode.x, y: sourceNode.y },
-        { x: d3.event.x, y: d3.event.y }
-      ]));
+      .attr(
+        "d",
+        this.lineFunction([
+          { x: sourceNode.x, y: sourceNode.y },
+          { x: d3.event.x, y: d3.event.y }
+        ])
+      );
 
     d3.event.on("drag", dragged).on("end", ended);
 
     function dragged(d) {
-      dragEdge.attr( 'd', self.lineFunction([
-        { x: sourceNode.x, y: sourceNode.y },
-        { x: d3.event.x, y: d3.event.y }
-      ]) )
+      dragEdge.attr(
+        "d",
+        self.lineFunction([
+          { x: sourceNode.x, y: sourceNode.y },
+          { x: d3.event.x, y: d3.event.y }
+        ])
+      );
     }
 
     function ended(d) {
@@ -291,26 +312,28 @@ class GraphView extends Component {
         drawingEdge: false
       });
 
-      if(hoveredNode && self.props.canCreateEdge(sourceNode, hoveredNode)){
-
-        if( swapEdge ){
-          if(self.props.canDeleteEdge(swapEdge) && self.canSwap(sourceNode,hoveredNode,swapEdge)){
-            self.props.onSwapEdge(sourceNode, hoveredNode, swapEdge)
-            self.renderView()
+      if (hoveredNode && self.props.canCreateEdge(sourceNode, hoveredNode)) {
+        if (swapEdge) {
+          if (
+            self.props.canDeleteEdge(swapEdge) &&
+            self.canSwap(sourceNode, hoveredNode, swapEdge)
+          ) {
+            self.props.onSwapEdge(sourceNode, hoveredNode, swapEdge);
+            self.renderView();
           } else {
-            swapErrBack()
+            swapErrBack();
           }
         } else {
-          self.props.onCreateEdge(sourceNode, hoveredNode)
-          self.renderView()
+          self.props.onCreateEdge(sourceNode, hoveredNode);
+          self.renderView();
         }
       } else {
-        if (swapErrBack){
-          swapErrBack()
+        if (swapErrBack) {
+          swapErrBack();
         }
       }
     }
-  }
+  };
 
   dragNode = () => {
     const self = this;
@@ -329,10 +352,10 @@ class GraphView extends Component {
       // Moves child to the end of the element stack to re-arrange the z-index
       this.parentElement.appendChild(this);
 
-      selectedNode.attr('transform', function(d) {
+      selectedNode.attr("transform", function(d) {
         d.x += d3.event.dx;
         d.y += d3.event.dy;
-        return 'translate(' + d.x + ',' + d.y + ')';
+        return "translate(" + d.x + "," + d.y + ")";
       });
       self.render();
     }
@@ -340,7 +363,7 @@ class GraphView extends Component {
     function ended() {
       el.classed("dragging", false);
 
-      if(!self.props.readOnly){
+      if (!self.props.readOnly) {
         var d = d3.select(this).datum();
         // Move the node back to the original z-index
         if (oldSibling) {
@@ -351,19 +374,21 @@ class GraphView extends Component {
 
       // For some reason, mouseup isn't firing
       // - manually firing it here
-      d3.select(this).node().dispatchEvent(new Event("mouseup"))
+      d3.select(this)
+        .node()
+        .dispatchEvent(new Event("mouseup"));
     }
-  }
+  };
 
   // Node 'drag' handler
   handleNodeDrag = () => {
-    if(this.state.drawingEdge && !this.props.readOnly){
-      const target = {x: d3.event.subject.x, y: d3.event.subject.y }
-      this.drawEdge(d3.event.subject, target )
+    if (this.state.drawingEdge && !this.props.readOnly) {
+      const target = { x: d3.event.subject.x, y: d3.event.subject.y };
+      this.drawEdge(d3.event.subject, target);
     } else {
-      this.dragNode()
+      this.dragNode();
     }
-  }
+  };
 
   handleDelete = () => {
     if (this.props.readOnly) return;
@@ -377,7 +402,7 @@ class GraphView extends Component {
         this.props.onSelectNode(null);
       }
     }
-  }
+  };
 
   handleWrapperKeydown = (d, i) => {
     // Conditionally ignore keypress events on the window
@@ -392,9 +417,9 @@ class GraphView extends Component {
       default:
         break;
     }
-  }
+  };
 
-  handleSvgClicked = (d, i) => {
+  handleSvgClicked = (event, i) => {
     if (this.isPartOfEdge(d3.event.target)) return; // If any part of the edge is clicked, return
 
     if (this.state.selectingNode) {
@@ -405,14 +430,14 @@ class GraphView extends Component {
       this.props.onSelectNode(null);
 
       if (!this.props.readOnly && d3.event.shiftKey) {
-          var xycoords = d3.mouse(event.target);
-          this.props.onCreateNode(xycoords[0], xycoords[1]);
-          this.renderView();
-        }
+        var xycoords = d3.mouse(event.target);
+        this.props.onCreateNode(xycoords[0], xycoords[1]);
+        this.renderView();
+      }
     }
-  }
+  };
 
-  isPartOfEdge = (element) => {
+  isPartOfEdge = element => {
     while (element != null && element != this.viewWrapper) {
       if (element.classList.contains("edge")) {
         return true;
@@ -420,9 +445,9 @@ class GraphView extends Component {
       element = element.parentElement;
     }
     return false;
-  }
+  };
 
-  handleNodeMouseDown = (d) => {
+  handleNodeMouseDown = d => {
     if (d3.event.defaultPrevented) {
       return; // dragged
     }
@@ -435,12 +460,10 @@ class GraphView extends Component {
     }
 
     if (d3.event.shiftKey) {
-
       this.setState({
         selectingNode: true,
         drawingEdge: true
-      })
-
+      });
     } else {
       const previousSelection = this.state.previousSelection;
       this.setState({
@@ -449,67 +472,64 @@ class GraphView extends Component {
         previousSelection
       });
     }
-  }
+  };
 
-  handleNodeMouseUp = (d) => {
+  handleNodeMouseUp = d => {
     if (this.state.selectingNode) {
       this.props.onSelectNode(d);
       this.setState({
         selectingNode: false
       });
     }
-  }
+  };
 
-  handleNodeMouseEnter = (d) => {
-    if (this.state.hoveredNode != d){
+  handleNodeMouseEnter = d => {
+    if (this.state.hoveredNode != d) {
       this.setState({
         hoveredNode: d
-      })
+      });
     }
-  }
+  };
 
-  handleNodeMouseLeave = (d) => {
-
+  handleNodeMouseLeave = event => {
     // For whatever reason, mouseLeave is fired when edge dragging ends
     // (and mouseup is not fired). This clears the hoverNode state prematurely
     // resulting in swapEdge failing to fire.
     // Detecting & ignoring mouseLeave events that result from drag ending here
     const fromMouseup = event.which == 1;
-    if (this.state.hoveredNode === d && !fromMouseup){
+    if (this.state.hoveredNode === event && !fromMouseup) {
       this.setState({
         hoveredNode: null
-      })
+      });
     }
-  }
+  };
 
   // One can't attach handlers to 'markers' or obtain them from the event.target
   // If the click occurs within a certain radius of edge target,
   // assume the click occurred on the arrow
-  arrowClicked = (d)=> {
-
-    if(event.target.tagName != 'path') return false; // If the handle is clicked
+  arrowClicked = event => {
+    if (event.target.tagName != "path") return false; // If the handle is clicked
 
     const xycoords = d3.mouse(event.target);
-    const target = this.props.getViewNode(d.target);
-    const dist = getDistance({x: xycoords[0], y: xycoords[1]}, target);
+    const target = this.props.getViewNode(event.target);
+    const dist = getDistance({ x: xycoords[0], y: xycoords[1] }, target);
 
-    return dist < this.props.nodeSize/2 + this.props.edgeArrowSize + 10 // or *2 or ^2?
-  }
+    return dist < this.props.nodeSize / 2 + this.props.edgeArrowSize + 10; // or *2 or ^2?
+  };
 
-  handleEdgeDrag = (d) => {
-    if(!this.props.readOnly && this.state.drawingEdge ){
+  handleEdgeDrag = event => {
+    if (!this.props.readOnly && this.state.drawingEdge) {
       const edgeDOMNode = event.target.parentElement;
-      const sourceNode = this.props.getViewNode(d.source);
-      const xycoords = d3.mouse(event.target)
-      const target = {x: xycoords[0], y: xycoords[1]}
+      const sourceNode = this.props.getViewNode(event.source);
+      const xycoords = d3.mouse(event.target);
+      const target = { x: xycoords[0], y: xycoords[1] };
 
       this.hideEdge(edgeDOMNode);
-      this.drawEdge(sourceNode, target, this.showEdge.bind(this, edgeDOMNode))
+      this.drawEdge(sourceNode, target, this.showEdge.bind(this, edgeDOMNode));
     }
-  }
+  };
 
-
-  handleEdgeMouseDown = (d) => {
+  handleEdgeMouseDown = d => {
     // Prevent d3's default as it changes the focus to the body
     d3.event.preventDefault();
     d3.event.stopPropagation();
@@ -518,20 +538,20 @@ class GraphView extends Component {
     }
 
     if (!this.props.readOnly && this.arrowClicked(d)) {
-      this.state.edgeSwapQueue.push(d)  // Set this edge aside for redrawing
+      this.state.edgeSwapQueue.push(d); // Set this edge aside for redrawing
       this.setState({
         drawingEdge: true,
         edgeSwapQueue: this.state.edgeSwapQueue
-      })
-    } else{
+      });
+    } else {
       this.props.onSelectEdge(d);
     }
-  }
+  };
 
   // Keeps 'zoom' contained
   containZoom = () => {
     d3.event.preventDefault();
-  }
+  };
 
   // View 'zoom' handler
   handleZoom = () => {
@@ -540,7 +560,7 @@ class GraphView extends Component {
         viewTransform: d3.event.transform
       });
     }
-  }
+  };
 
   // Zooms to contents of this.refs.entities
   handleZoomToFit = () => {
@@ -553,38 +573,41 @@ class GraphView extends Component {
     const height = parent.clientHeight;
 
     let dx,
-        dy,
-        x,
-        y,
-        translate = [this.state.viewTransform.x, this.state.viewTransform.y],
-      next = { x: translate[0], y: translate[1], k: this.state.viewTransform.k };
+      dy,
+      x,
+      y,
+      translate = [this.state.viewTransform.x, this.state.viewTransform.y],
+      next = {
+        x: translate[0],
+        y: translate[1],
+        k: this.state.viewTransform.k
+      };
 
-    if (viewBBox.width > 0 && viewBBox.height > 0){
+    if (viewBBox.width > 0 && viewBBox.height > 0) {
       // There are entities
-      dx = viewBBox.width,
-      dy = viewBBox.height,
-      x = viewBBox.x + viewBBox.width / 2,
-      y = viewBBox.y + viewBBox.height / 2;
+      (dx = viewBBox.width),
+        (dy = viewBBox.height),
+        (x = viewBBox.x + viewBBox.width / 2),
+        (y = viewBBox.y + viewBBox.height / 2);
 
-      next.k = .9 / Math.max(dx / width, dy / height);
+      next.k = 0.9 / Math.max(dx / width, dy / height);
 
-      if (next.k < this.props.minZoom){
+      if (next.k < this.props.minZoom) {
         next.k = this.props.minZoom;
-      } else if (next.k > this.props.maxZoom){
+      } else if (next.k > this.props.maxZoom) {
         next.k = this.props.maxZoom;
       }
 
       next.x = width / 2 - next.k * x;
       next.y = height / 2 - next.k * y;
-    }
-    else{
+    } else {
       next.k = (this.props.minZoom + this.props.maxZoom) / 2;
       next.x = 0;
       next.y = 0;
     }
 
     this.setZoom(next.k, next.x, next.y, this.props.zoomDur);
-  }
+  };
 
   // Updates current viewTransform with some delta
   modifyZoom = (modK = 0, modX = 0, modY = 0, dur = 0) => {
@@ -593,16 +616,22 @@ class GraphView extends Component {
     const height = parent.clientHeight;
 
     let target_zoom,
-        center = [width/2, height/2],
-        extent = this.zoom.scaleExtent(),
-        translate = [this.state.viewTransform.x, this.state.viewTransform.y],
-        translate0 = [],
-        l = [],
-        next = {x: translate[0], y: translate[1], k:  this.state.viewTransform.k};
+      center = [width / 2, height / 2],
+      extent = this.zoom.scaleExtent(),
+      translate = [this.state.viewTransform.x, this.state.viewTransform.y],
+      translate0 = [],
+      l = [],
+      next = {
+        x: translate[0],
+        y: translate[1],
+        k: this.state.viewTransform.k
+      };
 
     target_zoom = next.k * (1 + modK);
 
-    if (target_zoom < extent[0] || target_zoom > extent[1]) { return false; }
+    if (target_zoom < extent[0] || target_zoom > extent[1]) {
+      return false;
+    }
 
     translate0 = [(center[0] - next.x) / next.k, (center[1] - next.y) / next.k];
     next.k = target_zoom;
@@ -611,17 +640,18 @@ class GraphView extends Component {
     next.x += center[0] - l[0] + modX;
     next.y += center[1] - l[1] + modY;
 
-    this.setZoom(next.k, next.x, next.y, dur)
-  }
+    this.setZoom(next.k, next.x, next.y, dur);
+  };
 
   // Programmatically resets zoom
-  setZoom = (k=1, x=0, y=0, dur=0) => {
+  setZoom = (k = 1, x = 0, y = 0, dur = 0) => {
     var t = d3.zoomIdentity.translate(x, y).scale(k);
-    d3.select(this.viewWrapper).select('svg')
+    d3.select(this.viewWrapper)
+      .select("svg")
       .transition()
       .duration(dur)
       .call(this.zoom.transform, t);
-  }
+  };
 
   /*
    * Render
@@ -631,10 +661,10 @@ class GraphView extends Component {
   // edge.source and edge.target are node ids
   // @deprecated - not removed due to potential third party integrations
   getPathDescriptionStr = (sourceX, sourceY, targetX, targetY) => {
-    return `M${sourceX},${sourceY}L${targetX},${targetY}`
-  }
+    return `M${sourceX},${sourceY}L${targetX},${targetY}`;
+  };
 
-  getPathDescription = (edge) => {
+  getPathDescription = edge => {
     let src = this.props.getViewNode(edge.source);
     let trg = this.props.getViewNode(edge.target);
 
@@ -652,52 +682,54 @@ class GraphView extends Component {
       ]);
     }
     console.warn("Unable to get source or target for ", edge);
-    return ""
-  }
+    return "";
+  };
 
-  getEdgeHandleTransformation = (edge) => {
+  getEdgeHandleTransformation = edge => {
     let src = this.props.getViewNode(edge.source);
     let trg = this.props.getViewNode(edge.target);
 
     let origin = getMidpoint(src, trg);
     let x = origin.x;
     let y = origin.y;
-    let theta = getTheta(src, trg)*180/Math.PI;
-    let offset = -this.props.edgeHandleSize/2;
+    let theta = (getTheta(src, trg) * 180) / Math.PI;
+    let offset = -this.props.edgeHandleSize / 2;
 
-    return `translate(${x}, ${y}) rotate(${theta}) translate(${offset}, ${offset})`
-  }
+    return `translate(${x}, ${y}) rotate(${theta}) translate(${offset}, ${offset})`;
+  };
 
   // Returns a d3 transformation string from node data
-  getNodeTransformation = (node) => {
-    return 'translate(' + node.x + ',' + node.y + ')';
-  }
+  getNodeTransformation = node => {
+    return "translate(" + node.x + "," + node.y + ")";
+  };
 
   getNodeStyle = (d, selected) => {
-    return d === selected ?
-      this.state.styles.node.selectedString :
-      this.state.styles.node.baseString
-  }
+    return d === selected
+      ? this.state.styles.node.selectedString
+      : this.state.styles.node.baseString;
+  };
 
   getEdgeStyle = (d, selected) => {
-    return d === selected ?
-      this.state.styles.edge.selectedString :
-      this.state.styles.edge.baseString
-  }
+    return d === selected
+      ? this.state.styles.edge.selectedString
+      : this.state.styles.edge.baseString;
+  };
 
   getTextStyle = (d, selected) => {
-    return d === selected ?
-      this.state.styles.text.selectedString :
-      this.state.styles.text.baseString
-  }
+    return d === selected
+      ? this.state.styles.text.selectedString
+      : this.state.styles.text.baseString;
+  };
 
   // Renders 'node.title' into node element
   renderNodeText = (d, domNode) => {
     let d3Node = d3.select(domNode);
-    let title = d.title ? d.title : ' ';
+    let title = d.title ? d.title : " ";
 
-    let titleText = title.length <= this.props.maxTitleChars ? title :
-      `${title.substring(0, this.props.maxTitleChars)}...`;
+    let titleText =
+      title.length <= this.props.maxTitleChars
+        ? title
+        : `${title.substring(0, this.props.maxTitleChars)}...`;
 
     let lineOffset = 18;
     let textOffset = d.type === this.props.emptyType ? -9 : 18;
@@ -707,46 +739,52 @@ class GraphView extends Component {
     let typeText = this.props.nodeTypes[d.type].typeText;
     let style = this.getTextStyle(d, this.props.selected);
 
-    let el = d3Node.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('style', style)
-      .attr('dy', textOffset);
+    let el = d3Node
+      .append("text")
+      .attr("text-anchor", "middle")
+      .attr("style", style)
+      .attr("dy", textOffset);
 
-    el.append('tspan')
-      .attr('opacity', 0.5)
+    el.append("tspan")
+      .attr("opacity", 0.5)
       .text(typeText);
 
     if (title) {
       // User defined/secondary text
-      el.append('tspan').text(titleText).attr('x', 0).attr('dy', lineOffset)
+      el.append("tspan")
+        .text(titleText)
+        .attr("x", 0)
+        .attr("dy", lineOffset);
 
-      el.append('title').text(title);
+      el.append("title").text(title);
     }
-  }
+  };
 
   // Renders 'edges' into entities element
   renderEdges = (entities, edges) => {
     var self = this;
 
     // Join Data
-    var edges = entities.selectAll("g.edge")
-      .data(edges, function(d) {
-        // IMPORTANT: this snippet allows D3 to detect updated vs. new data
-        return `${d.source}:${d.target}`;
-      });
+    var edges = entities.selectAll("g.edge").data(edges, function(d) {
+      // IMPORTANT: this snippet allows D3 to detect updated vs. new data
+      return `${d.source}:${d.target}`;
+    });
 
     // Remove Old
-    edges.exit()
-        .remove();
+    edges.exit().remove();
 
     // Add New
-    var newEdges = edges.enter().append("g").classed("edge", true);
+    var newEdges = edges
+      .enter()
+      .append("g")
+      .classed("edge", true);
 
     newEdges
       .on("mousedown", this.handleEdgeMouseDown)
       .call(d3.drag().on("start", this.handleEdgeDrag));
 
-    newEdges.attr("opacity", 0)
+    newEdges
+      .attr("opacity", 0)
       .transition()
       .duration(self.props.transitionTime)
       .attr("opacity", 1);
@@ -762,13 +800,13 @@ class GraphView extends Component {
         clearTimeout(self.edgeTimeouts[key]);
       }
       self.edgeTimeouts[key] = setTimeout(() => {
-        self.props.renderEdge(self, this, d, i, els)
+        self.props.renderEdge(self, this, d, i, els);
       });
     }
 
     // Update All
     edges.each(updateEdge);
-  }
+  };
 
   // Renders 'nodes' into entities element
   renderNodes = (entities, nodes) => {
@@ -776,7 +814,7 @@ class GraphView extends Component {
     const nodeKey = this.props.nodeKey;
     const parent = this.viewWrapper;
     const viewTransform = this.state.viewTransform;
-    const overlap = (300 / viewTransform.k);
+    const overlap = 300 / viewTransform.k;
 
     // Join Data
     let nodeKeyWarned = false;
@@ -790,22 +828,27 @@ class GraphView extends Component {
         );
         nodeKeyWarned = true;
       }
-      return d[nodeKey]
+      return d[nodeKey];
     });
 
     // Animate/Remove Old
-    var removedNodes = nodesSelection.exit()
+    var removedNodes = nodesSelection
+      .exit()
       .transition()
       .duration(self.props.transitionTime)
       .attr("opacity", 0)
       .remove();
 
     // Add New
-    var newNodes = nodesSelection.enter().append("g").classed("node", true);
+    var newNodes = nodesSelection
+      .enter()
+      .append("g")
+      .classed("node", true);
 
-    newNodes.on("mousedown", this.handleNodeMouseDown)
+    newNodes
+      .on("mousedown", this.handleNodeMouseDown)
       .on("mouseup", this.handleNodeMouseUp)
-      .on("click", (d) => {
+      .on("click", d => {
         // Force blocking propagation on node click.
         // It was found that large graphs would handle clicks on the canvas even
         // though the mouseDown event blocked propagation.
@@ -833,15 +876,14 @@ class GraphView extends Component {
         clearTimeout(self.nodeTimeouts[key]);
       }
       self.nodeTimeouts[key] = setTimeout(() => {
-        self.props.renderNode(self, this, d, i, els)
+        self.props.renderNode(self, this, d, i, els);
       });
     }
 
     // Update Selected and Unselected
     // New or Removed
-    const selected = nodesSelection.filter((d) => {
-      return (d === this.props.selected ||
-        d === this.state.previousSelection);
+    const selected = nodesSelection.filter(d => {
+      return d === this.props.selected || d === this.state.previousSelection;
     });
 
     /*
@@ -856,12 +898,12 @@ class GraphView extends Component {
       TODO: figure out the zoom-to-fit if this is added
     */
     // function viewableFilter(d) {
-      // const xPosition = (d.x + viewTransform.x) * viewTransform.k;
-      // const yPosition = (d.y + viewTransform.y) * viewTransform.k;
-      // return xPosition < parent.offsetWidth + overlap &&
-      //   xPosition > 0 - overlap &&
-      //   yPosition < parent.offsetHeight + overlap &&
-      //   yPosition > 0 - overlap;
+    // const xPosition = (d.x + viewTransform.x) * viewTransform.k;
+    // const yPosition = (d.y + viewTransform.y) * viewTransform.k;
+    // return xPosition < parent.offsetWidth + overlap &&
+    //   xPosition > 0 - overlap &&
+    //   yPosition < parent.offsetHeight + overlap &&
+    //   yPosition > 0 - overlap;
     // }
     // selected.filter(viewableFilter).each(updateNode);
     // removedNodes.filter(viewableFilter).each(updateNode);
@@ -876,26 +918,31 @@ class GraphView extends Component {
     // Update all others
     // Normally we would want to only render all others on a zoom change,
     // however sometimes other nodes must be updated on a selection
-    nodesSelection.filter((d) => {
-      const isInSelected = selected.filter((sd) => {
-        return sd === d;
-      }).size();
-      const isInNewNodes = newNodes.filter((nd) => {
-        return nd === d;
-      }).size();
-      const isInRemovedNodes = removedNodes.filter((rd) => {
-        return rd === d;
-      }).size();
+    nodesSelection
+      .filter(d => {
+        const isInSelected = selected
+          .filter(sd => {
+            return sd === d;
+          })
+          .size();
+        const isInNewNodes = newNodes
+          .filter(nd => {
+            return nd === d;
+          })
+          .size();
+        const isInRemovedNodes = removedNodes
+          .filter(rd => {
+            return rd === d;
+          })
+          .size();
 
-      return (
-        // viewableFilter(d) && // see comment above
-        !isInSelected &&
-        !isInNewNodes &&
-        !isInRemovedNodes
-      );
-    }).each(updateNode);
-
-  }
+        return (
+          // viewableFilter(d) && // see comment above
+          !isInSelected && !isInNewNodes && !isInRemovedNodes
+        );
+      })
+      .each(updateNode);
+  };
 
   // Renders 'graph' into view element
   // All DOM updates within 'view' are managed by D3
@@ -916,56 +963,54 @@ class GraphView extends Component {
 
     this.renderNodes(entities, nodes);
     this.renderEdges(entities, edges);
-  }
-
+  };
 
   render() {
     this.renderView();
     const { styles, focused } = this.state;
     return (
       <div
-          className='viewWrapper'
-          tabIndex={0}
-          onFocus={() => {
+        className="viewWrapper"
+        tabIndex={0}
+        onFocus={() => {
+          this.setState({
+            focused: true
+          });
+        }}
+        onBlur={() => {
+          if (this.props.enableFocus) {
             this.setState({
-              focused: true
+              focused: false
             });
-          }}
-          onBlur={() => {
-            if (this.props.enableFocus) {
-              this.setState({
-                focused: false
-              });
-            }
-          }}
-          ref={(el) => this.viewWrapper = el}
-          style={[
-            styles.wrapper.base,
-            !!focused && styles.wrapper.focused,
-            this.props.style
-          ]}>
+          }
+        }}
+        ref={el => (this.viewWrapper = el)}
+        style={[
+          styles.wrapper.base,
+          !!focused && styles.wrapper.focused,
+          this.props.style
+        ]}
+      >
         <svg style={styles.svg.base}>
-          { this.props.renderDefs(this) }
-          <g className='view' ref={(el) => this.view = el}>
-            { this.props.renderBackground(this) }
-            <g className='entities' ref={(el) => this.entities = el}></g>
+          {this.props.renderDefs(this)}
+          <g className="view" ref={el => (this.view = el)}>
+            {this.props.renderBackground(this)}
+            <g className="entities" ref={el => (this.entities = el)} />
           </g>
         </svg>
         {this.props.graphControls && (
-        <GraphControls  primary={this.props.primary}
-                        minZoom={this.props.minZoom}
-                        maxZoom={this.props.maxZoom}
-                        zoomLevel={this.state.viewTransform.k}
-                        zoomToFit={this.handleZoomToFit}
-                        modifyZoom={this.modifyZoom}>
-        </GraphControls>
+          <GraphControls
+            primary={this.props.primary}
+            minZoom={this.props.minZoom}
+            maxZoom={this.props.maxZoom}
+            zoomLevel={this.state.viewTransform.k}
+            zoomToFit={this.handleZoomToFit}
+            modifyZoom={this.modifyZoom}
+          />
         )}
       </div>
     );
-
-
   }
-
 }
 
 GraphView.propTypes = {
@@ -1012,17 +1057,17 @@ GraphView.propTypes = {
   edgeArrowSize: PropTypes.number,
   zoomDelay: PropTypes.number, // ms
   zoomDur: PropTypes.number, // ms
-  graphControls: PropTypes.bool,
+  graphControls: PropTypes.bool
 };
 
 GraphView.defaultProps = {
   readOnly: false,
   maxTitleChars: 9,
   transitionTime: 150,
-  primary: 'dodgerblue',
-  light: '#FFF',
-  dark: '#000',
-  background: '#F9F9F9',
+  primary: "dodgerblue",
+  light: "#FFF",
+  dark: "#000",
+  background: "#F9F9F9",
   gridSize: 40960, // The point grid is fixed
   gridSpacing: 36,
   gridDot: 2,
@@ -1034,67 +1079,74 @@ GraphView.defaultProps = {
   zoomDelay: 500,
   zoomDur: 750,
   graphControls: true,
-  renderEdge: (graphView, domNode, datum, index, elements ) => {
-
+  renderEdge: (graphView, domNode, datum, index, elements) => {
     // For new edges, add necessary child domNodes
-    if (!domNode.hasChildNodes()){
+    if (!domNode.hasChildNodes()) {
       d3.select(domNode).append("path");
       d3.select(domNode).append("use");
     }
 
     let style = graphView.getEdgeStyle(datum, graphView.props.selected);
-    let trans = graphView.getEdgeHandleTransformation(datum)
+    let trans = graphView.getEdgeHandleTransformation(datum);
     d3.select(domNode)
       .attr("style", style)
       .select("use")
-        .attr("xlink:href", function(d){ return graphView.props.edgeTypes[d.type].shapeId })
-        .attr("width", graphView.props.edgeHandleSize)
-        .attr("height", graphView.props.edgeHandleSize)
-        .attr("transform", trans);
+      .attr("xlink:href", function(d) {
+        return graphView.props.edgeTypes[d.type].shapeId;
+      })
+      .attr("width", graphView.props.edgeHandleSize)
+      .attr("height", graphView.props.edgeHandleSize)
+      .attr("transform", trans);
 
     d3.select(domNode)
-      .select('path')
-        .attr('d', graphView.getPathDescription);
+      .select("path")
+      .attr("d", graphView.getPathDescription);
   },
   renderNode: (graphView, domNode, datum, index, elements) => {
     // For new nodes, add necessary child domNodes
     const selection = d3.select(domNode);
     if (!domNode.hasChildNodes()) {
-      selection.append("use").classed("subtypeShape", true)
-        .attr("x", -graphView.props.nodeSize/2)
-        .attr("y",  -graphView.props.nodeSize/2)
+      selection
+        .append("use")
+        .classed("subtypeShape", true)
+        .attr("x", -graphView.props.nodeSize / 2)
+        .attr("y", -graphView.props.nodeSize / 2)
         .attr("width", graphView.props.nodeSize)
         .attr("height", graphView.props.nodeSize);
-      selection.append("use").classed("shape", true)
-        .attr("x", -graphView.props.nodeSize/2)
-        .attr("y",  -graphView.props.nodeSize/2)
+      selection
+        .append("use")
+        .classed("shape", true)
+        .attr("x", -graphView.props.nodeSize / 2)
+        .attr("y", -graphView.props.nodeSize / 2)
         .attr("width", graphView.props.nodeSize)
         .attr("height", graphView.props.nodeSize);
     }
 
     let style = graphView.getNodeStyle(datum, graphView.props.selected);
 
-    selection
-      .attr("style", style);
+    selection.attr("style", style);
 
     if (datum.subtype) {
-      selection.select("use.subtypeShape")
-        .attr("xlink:href", function (d) { return graphView.props.nodeSubtypes[d.subtype].shapeId });
+      selection.select("use.subtypeShape").attr("xlink:href", function(d) {
+        return graphView.props.nodeSubtypes[d.subtype].shapeId;
+      });
     } else {
-      selection.select("use.subtypeShape")
-        .attr("xlink:href", function (d) { return null });
+      selection.select("use.subtypeShape").attr("xlink:href", function(d) {
+        return null;
+      });
     }
 
-    selection.select("use.shape")
-      .attr("xlink:href", function (d) { return graphView.props.nodeTypes[d.type].shapeId });
+    selection.select("use.shape").attr("xlink:href", function(d) {
+      return graphView.props.nodeTypes[d.type].shapeId;
+    });
 
-    selection.attr('id', `node-${datum[graphView.props.nodeKey]}`);
+    selection.attr("id", `node-${datum[graphView.props.nodeKey]}`);
 
     graphView.renderNodeText(datum, domNode);
 
-    selection.attr('transform', graphView.getNodeTransformation);
+    selection.attr("transform", graphView.getNodeTransformation);
   },
-  renderDefs: (graphView) => {
+  renderDefs: graphView => {
     const { styles } = graphView.state;
     const {
       edgeArrowSize,
@@ -1108,78 +1160,91 @@ GraphView.defaultProps = {
     let defIndex = 0;
     let graphConfigDefs = [];
 
-    Object.keys(nodeTypes).forEach(function(type){
+    Object.keys(nodeTypes).forEach(function(type) {
       defIndex += 1;
-      graphConfigDefs.push(React.cloneElement(nodeTypes[type].shape, {key: defIndex}))
-    })
+      graphConfigDefs.push(
+        React.cloneElement(nodeTypes[type].shape, { key: defIndex })
+      );
+    });
 
-    Object.keys(nodeSubtypes).forEach(function(type){
+    Object.keys(nodeSubtypes).forEach(function(type) {
       defIndex += 1;
-      graphConfigDefs.push(React.cloneElement(nodeSubtypes[type].shape, {key: defIndex}))
-    })
+      graphConfigDefs.push(
+        React.cloneElement(nodeSubtypes[type].shape, { key: defIndex })
+      );
+    });
 
-    Object.keys(edgeTypes).forEach(function(type){
+    Object.keys(edgeTypes).forEach(function(type) {
       defIndex += 1;
-      graphConfigDefs.push(React.cloneElement(edgeTypes[type].shape, {key: defIndex}))
-    })
+      graphConfigDefs.push(
+        React.cloneElement(edgeTypes[type].shape, { key: defIndex })
+      );
+    });
 
     return (
       <defs>
         {graphConfigDefs}
 
-        <marker id="end-arrow"
-                key="end-arrow"
-                viewBox={`0 -${edgeArrowSize/2} ${edgeArrowSize} ${edgeArrowSize}`}
-                refX={`${edgeArrowSize/2}`}
-                markerWidth={`${edgeArrowSize}`}
-                markerHeight={`${edgeArrowSize}`}
-                orient="auto">
-          <path style={ styles.arrow }
-                d={`M0,-${edgeArrowSize/2}L${edgeArrowSize},0L0,${edgeArrowSize/2}`}>
-          </path>
+        <marker
+          id="end-arrow"
+          key="end-arrow"
+          viewBox={`0 -${edgeArrowSize / 2} ${edgeArrowSize} ${edgeArrowSize}`}
+          refX={`${edgeArrowSize / 2}`}
+          markerWidth={`${edgeArrowSize}`}
+          markerHeight={`${edgeArrowSize}`}
+          orient="auto"
+        >
+          <path
+            style={styles.arrow}
+            d={`M0,-${edgeArrowSize / 2}L${edgeArrowSize},0L0,${edgeArrowSize /
+              2}`}
+          />
         </marker>
 
-        <pattern  id="grid"
-                  key="grid"
-                  width={gridSpacing}
-                  height={gridSpacing}
-                  patternUnits="userSpaceOnUse">
-          <circle cx={gridSpacing/2}
-                  cy={gridSpacing/2}
-                  r={gridDot}
-                  fill="lightgray">
-          </circle>
+        <pattern
+          id="grid"
+          key="grid"
+          width={gridSpacing}
+          height={gridSpacing}
+          patternUnits="userSpaceOnUse"
+        >
+          <circle
+            cx={gridSpacing / 2}
+            cy={gridSpacing / 2}
+            r={gridDot}
+            fill="lightgray"
+          />
         </pattern>
 
         <filter id="dropshadow" key="dropshadow" height="130%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-          <feOffset dx="2" dy="2" result="offsetblur"/>
+          <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+          <feOffset dx="2" dy="2" result="offsetblur" />
           <feComponentTransfer>
-            <feFuncA type="linear" slope="0.1"/>
+            <feFuncA type="linear" slope="0.1" />
           </feComponentTransfer>
           <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-
       </defs>
-    )
+    );
   },
-  renderBackground: (graphView) => {
+  renderBackground: graphView => {
     return (
-      <rect className='background'
-        x={-graphView.props.gridSize/4}
-        y={-graphView.props.gridSize/4}
-        width={ graphView.props.gridSize }
-        height={ graphView.props.gridSize }
-        fill="url(#grid)">
-      </rect>
-    )
+      <rect
+        className="background"
+        x={-graphView.props.gridSize / 4}
+        y={-graphView.props.gridSize / 4}
+        width={graphView.props.gridSize}
+        height={graphView.props.gridSize}
+        fill="url(#grid)"
+      />
+    );
   },
   canDeleteNode: () => true,
   canCreateEdge: () => true,
-  canDeleteEdge: () => true,
+  canDeleteEdge: () => true
 };
 
-export default Radium(GraphView)
+export default Radium(GraphView);
