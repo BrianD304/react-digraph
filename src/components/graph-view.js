@@ -1018,7 +1018,7 @@ GraphView.propTypes = {
   emptyType: PropTypes.string.isRequired,
   nodes: PropTypes.array.isRequired,
   edges: PropTypes.array.isRequired,
-  selected: PropTypes.object.isRequired,
+  selected: PropTypes.object,
   nodeTypes: PropTypes.object.isRequired,
   nodeSubtypes: PropTypes.object.isRequired,
   edgeTypes: PropTypes.object.isRequired,
